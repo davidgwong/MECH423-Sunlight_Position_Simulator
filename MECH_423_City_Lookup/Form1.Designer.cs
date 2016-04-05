@@ -37,11 +37,11 @@
             System.Windows.Forms.Label label6;
             System.Windows.Forms.Label label7;
             System.Windows.Forms.Label label8;
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.txtbxCityName = new System.Windows.Forms.TextBox();
             this.txtbxLat = new System.Windows.Forms.TextBox();
             this.txtbxLong = new System.Windows.Forms.TextBox();
             this.btnGetResults = new System.Windows.Forms.Button();
-            this.dateTimePicker1 = new System.Windows.Forms.DateTimePicker();
             this.txtbxMonth = new System.Windows.Forms.TextBox();
             this.btnSendMonth = new System.Windows.Forms.Button();
             this.btnSendAuto = new System.Windows.Forms.Button();
@@ -52,8 +52,10 @@
             this.btnConnectMSP = new System.Windows.Forms.Button();
             this.serMSP = new System.IO.Ports.SerialPort(this.components);
             this.btnMoveStepper = new System.Windows.Forms.Button();
-            this.txtbxCurrent = new System.Windows.Forms.TextBox();
-            this.txtbxAmount = new System.Windows.Forms.TextBox();
+            this.txtbxCurrentLongitude = new System.Windows.Forms.TextBox();
+            this.txtbxCurrentMonth = new System.Windows.Forms.TextBox();
+            this.tmrUpdatePos = new System.Windows.Forms.Timer(this.components);
+            this.btnHome = new System.Windows.Forms.Button();
             label1 = new System.Windows.Forms.Label();
             label2 = new System.Windows.Forms.Label();
             label3 = new System.Windows.Forms.Label();
@@ -124,6 +126,26 @@
             label6.TabIndex = 0;
             label6.Text = "Connect to MSP430:";
             // 
+            // label7
+            // 
+            label7.AutoSize = true;
+            label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            label7.Location = new System.Drawing.Point(13, 393);
+            label7.Name = "label7";
+            label7.Size = new System.Drawing.Size(167, 25);
+            label7.TabIndex = 0;
+            label7.Text = "Current longitude:";
+            // 
+            // label8
+            // 
+            label8.AutoSize = true;
+            label8.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            label8.Location = new System.Drawing.Point(13, 431);
+            label8.Name = "label8";
+            label8.Size = new System.Drawing.Size(142, 25);
+            label8.TabIndex = 0;
+            label8.Text = "Current month:";
+            // 
             // txtbxCityName
             // 
             this.txtbxCityName.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -157,13 +179,6 @@
             this.btnGetResults.Text = "Get Results";
             this.btnGetResults.UseVisualStyleBackColor = true;
             this.btnGetResults.Click += new System.EventHandler(this.btnGetResults_Click);
-            // 
-            // dateTimePicker1
-            // 
-            this.dateTimePicker1.Location = new System.Drawing.Point(18, 145);
-            this.dateTimePicker1.Name = "dateTimePicker1";
-            this.dateTimePicker1.Size = new System.Drawing.Size(308, 26);
-            this.dateTimePicker1.TabIndex = 3;
             // 
             // txtbxMonth
             // 
@@ -231,6 +246,10 @@
             this.btnConnectMSP.UseVisualStyleBackColor = true;
             this.btnConnectMSP.Click += new System.EventHandler(this.btnConnectMSP_Click);
             // 
+            // serMSP
+            // 
+            this.serMSP.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(this.serMSP_DataReceived);
+            // 
             // btnMoveStepper
             // 
             this.btnMoveStepper.Location = new System.Drawing.Point(656, 57);
@@ -241,41 +260,36 @@
             this.btnMoveStepper.UseVisualStyleBackColor = true;
             this.btnMoveStepper.Click += new System.EventHandler(this.btnMoveStepper_Click);
             // 
-            // txtbxCurrent
+            // txtbxCurrentLongitude
             // 
-            this.txtbxCurrent.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtbxCurrent.Location = new System.Drawing.Point(161, 390);
-            this.txtbxCurrent.Name = "txtbxCurrent";
-            this.txtbxCurrent.Size = new System.Drawing.Size(476, 30);
-            this.txtbxCurrent.TabIndex = 1;
+            this.txtbxCurrentLongitude.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtbxCurrentLongitude.Location = new System.Drawing.Point(186, 390);
+            this.txtbxCurrentLongitude.Name = "txtbxCurrentLongitude";
+            this.txtbxCurrentLongitude.Size = new System.Drawing.Size(451, 30);
+            this.txtbxCurrentLongitude.TabIndex = 1;
             // 
-            // label7
+            // txtbxCurrentMonth
             // 
-            label7.AutoSize = true;
-            label7.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            label7.Location = new System.Drawing.Point(13, 393);
-            label7.Name = "label7";
-            label7.Size = new System.Drawing.Size(83, 25);
-            label7.TabIndex = 0;
-            label7.Text = "Current:";
+            this.txtbxCurrentMonth.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtbxCurrentMonth.Location = new System.Drawing.Point(186, 426);
+            this.txtbxCurrentMonth.Name = "txtbxCurrentMonth";
+            this.txtbxCurrentMonth.Size = new System.Drawing.Size(451, 30);
+            this.txtbxCurrentMonth.TabIndex = 1;
             // 
-            // txtbxAmount
+            // tmrUpdatePos
             // 
-            this.txtbxAmount.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtbxAmount.Location = new System.Drawing.Point(161, 426);
-            this.txtbxAmount.Name = "txtbxAmount";
-            this.txtbxAmount.Size = new System.Drawing.Size(476, 30);
-            this.txtbxAmount.TabIndex = 1;
+            this.tmrUpdatePos.Enabled = true;
+            this.tmrUpdatePos.Tick += new System.EventHandler(this.tmrUpdatePos_Tick);
             // 
-            // label8
+            // btnHome
             // 
-            label8.AutoSize = true;
-            label8.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            label8.Location = new System.Drawing.Point(13, 431);
-            label8.Name = "label8";
-            label8.Size = new System.Drawing.Size(86, 25);
-            label8.TabIndex = 0;
-            label8.Text = "Amount:";
+            this.btnHome.Location = new System.Drawing.Point(656, 382);
+            this.btnHome.Name = "btnHome";
+            this.btnHome.Size = new System.Drawing.Size(142, 50);
+            this.btnHome.TabIndex = 2;
+            this.btnHome.Text = "Home";
+            this.btnHome.UseVisualStyleBackColor = true;
+            this.btnHome.Click += new System.EventHandler(this.btnHome_Click);
             // 
             // Form1
             // 
@@ -284,15 +298,15 @@
             this.ClientSize = new System.Drawing.Size(812, 568);
             this.Controls.Add(this.cmbbxCOMPortsMSP);
             this.Controls.Add(this.cmbbxCOMPortsArduino);
-            this.Controls.Add(this.dateTimePicker1);
             this.Controls.Add(this.btnConnectMSP);
             this.Controls.Add(this.btnConnectArduino);
+            this.Controls.Add(this.btnHome);
             this.Controls.Add(this.btnSendAuto);
             this.Controls.Add(this.btnSendMonth);
             this.Controls.Add(this.btnMoveStepper);
             this.Controls.Add(this.btnGetResults);
-            this.Controls.Add(this.txtbxAmount);
-            this.Controls.Add(this.txtbxCurrent);
+            this.Controls.Add(this.txtbxCurrentMonth);
+            this.Controls.Add(this.txtbxCurrentLongitude);
             this.Controls.Add(this.txtbxMonth);
             this.Controls.Add(this.txtbxLong);
             this.Controls.Add(this.txtbxLat);
@@ -305,8 +319,9 @@
             this.Controls.Add(label3);
             this.Controls.Add(label2);
             this.Controls.Add(label1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "Form1";
-            this.Text = "I am so bad at programming";
+            this.Text = "Sunlight Simulator";
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -318,7 +333,6 @@
         private System.Windows.Forms.TextBox txtbxLat;
         private System.Windows.Forms.TextBox txtbxLong;
         private System.Windows.Forms.Button btnGetResults;
-        private System.Windows.Forms.DateTimePicker dateTimePicker1;
         private System.Windows.Forms.TextBox txtbxMonth;
         private System.Windows.Forms.Button btnSendMonth;
         private System.Windows.Forms.Button btnSendAuto;
@@ -330,8 +344,11 @@
         private System.Windows.Forms.Button btnConnectMSP;
         private System.IO.Ports.SerialPort serMSP;
         private System.Windows.Forms.Button btnMoveStepper;
-        private System.Windows.Forms.TextBox txtbxCurrent;
-        private System.Windows.Forms.TextBox txtbxAmount;
+        private System.Windows.Forms.TextBox txtbxCurrentLongitude;
+        private System.Windows.Forms.TextBox txtbxCurrentMonth;
+        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.Timer tmrUpdatePos;
+        private System.Windows.Forms.Button btnHome;
     }
 }
 

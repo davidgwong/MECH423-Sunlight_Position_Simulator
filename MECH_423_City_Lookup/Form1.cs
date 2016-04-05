@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -20,8 +21,16 @@ namespace MECH_423_City_Lookup
     {
         byte[] TxBytesArduino = new Byte[1];
         byte[] TxBytesMSP = new Byte[5];
-        int desiredPosition = 0;
-        int currentPosition = 0;
+        double currentPosition = 0;
+        int amountStepped = -200;
+
+        ConcurrentQueue<int> outputDataQueueLongitude = new ConcurrentQueue<int>();   // Concurrent queue for reading data stream from serial port
+        int removedItemInDataQueueLongitude;
+        ConcurrentQueue<int> outputDataQueueMonth = new ConcurrentQueue<int>();   // Concurrent queue for reading data stream from serial port
+        int removedItemInDataQueueMonth;
+
+        int currentMonth = 1;
+        bool autoMode = false;
 
         public Form1()
         {
@@ -44,8 +53,6 @@ namespace MECH_423_City_Lookup
 
             txtbxLat.Text = lat.ToString();
             txtbxLong.Text = lng.ToString();
-
-            txtbxMonth.Text = dateTimePicker1.Value.Month.ToString();
         }
         private void btnSendMonth_Click(object sender, EventArgs e)
         {
@@ -56,6 +63,7 @@ namespace MECH_423_City_Lookup
                     TxBytesArduino[0] = Convert.ToByte(txtbxMonth.Text);
                     serArduino.Write(TxBytesArduino, 0, 1);
                 }
+                autoMode = false;
             }
             catch (Exception Ex)
             {
@@ -65,19 +73,55 @@ namespace MECH_423_City_Lookup
 
         private void btnSendAuto_Click(object sender, EventArgs e)
         {
-
             try
             {
-                if (serArduino.IsOpen)
+                if (serMSP.IsOpen)
                 {
-                    TxBytesArduino[0] = 13;
-                    serArduino.Write(TxBytesArduino, 0, 1);
+                    int milliseconds = 200;
+
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[0] = 255;
+                    serMSP.Write(TxBytesMSP, 0, 1);
+
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[1] = Convert.ToByte(1);  // This is the flag to set auto mode for MSP
+                    serMSP.Write(TxBytesMSP, 1, 1);
+
+
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[2] = Convert.ToByte(1);
+                    serMSP.Write(TxBytesMSP, 2, 1);
+
+
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[3] = Convert.ToByte(1);
+                    serMSP.Write(TxBytesMSP, 3, 1);
+
+
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[4] = 255;
+                    serMSP.Write(TxBytesMSP, 4, 1);
                 }
+                autoMode = true;
+                currentMonth = 1;
+                outputDataQueueMonth.Enqueue(currentMonth);
             }
             catch (Exception Ex)
             {
                 MessageBox.Show(Ex.Message);
             }
+            //try
+            //{
+            //    if (serArduino.IsOpen)
+            //    {
+            //        TxBytesArduino[0] = Convert.ToByte(arduinoAutoModeMonth);
+            //        serArduino.Write(TxBytesArduino, 0, 1);
+            //    }
+            //}
+            //catch (Exception Ex)
+            //{
+            //    MessageBox.Show(Ex.Message);
+            //}
         }
 
         private void cmbbxCOMPortsArduino_DropDown(object sender, EventArgs e)
@@ -98,18 +142,17 @@ namespace MECH_423_City_Lookup
             }
             else
             {
-                if (!string.IsNullOrWhiteSpace(cmbbxCOMPortsArduino.Text))
+                try
                 {
                     serArduino.PortName = cmbbxCOMPortsArduino.Text;
                     serArduino.Open();
                     btnConnectArduino.Text = "Disconnect";
                     cmbbxCOMPortsArduino.Enabled = false;
                 }
-                else
+                catch (Exception Ex)
                 {
-                    MessageBox.Show("No COM port selected. Please try again.", "ERROR");
+                    MessageBox.Show(Ex.Message);
                 }
-
             }
         }
 
@@ -151,15 +194,44 @@ namespace MECH_423_City_Lookup
 
             try
             {
+                if (serMSP.IsOpen)
+                {
+                    int milliseconds = 200;
 
-                double textboxLongValue = Convert.ToDouble(txtbxLong.Text);
-                double stepAmount = (textboxLongValue - currentPosition) / 1.8;
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[0] = 255;
+                    serMSP.Write(TxBytesMSP, 0, 1);
+
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[1] = Convert.ToByte(0);
+                    serMSP.Write(TxBytesMSP, 1, 1);
+
+
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[2] = Convert.ToByte(0);
+                    serMSP.Write(TxBytesMSP, 2, 1);
+
+
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[3] = Convert.ToByte(0);
+                    serMSP.Write(TxBytesMSP, 3, 1);
+
+
+                    Thread.Sleep(milliseconds);
+                    TxBytesMSP[4] = 255;
+                    serMSP.Write(TxBytesMSP, 4, 1);
+                }
+
+                currentPosition = 0.9 * amountStepped + 180;
+                double textboxLongValue = Convert.ToDouble(txtbxLong.Text) * -1;
+                double stepAmount;
+                if (textboxLongValue < 0)
+                    stepAmount = (textboxLongValue + 360 - currentPosition) / 0.9;
+                else
+                    stepAmount = (textboxLongValue - currentPosition) / 0.9;
                 int steptAmountInt = Convert.ToInt16(stepAmount);
                 int stepAmountToSend = Convert.ToInt16(Math.Abs(stepAmount));
-                int directionToSend;
-
-                if (stepAmount > 0) directionToSend = 0;
-                else directionToSend = 1;
+                int directionToSend = 0;
 
                 if (serMSP.IsOpen)
                 {
@@ -180,23 +252,100 @@ namespace MECH_423_City_Lookup
 
 
                     Thread.Sleep(milliseconds);
-                    TxBytesMSP[3] = Convert.ToByte(stepAmountToSend >> 4);
+                    TxBytesMSP[3] = Convert.ToByte(stepAmountToSend >> 8);
                     serMSP.Write(TxBytesMSP, 3, 1);
 
 
                     Thread.Sleep(milliseconds);
                     TxBytesMSP[4] = 255;
                     serMSP.Write(TxBytesMSP, 4, 1);
-
-                    txtbxCurrent.Text = Convert.ToString(currentPosition);
-                    txtbxAmount.Text = Convert.ToString(steptAmountInt);
-                    currentPosition += Convert.ToInt16(1.8 * steptAmountInt);
                 }
+
+                autoMode = false;
             }
             catch (Exception Ex)
             {
                 MessageBox.Show(Ex.Message);
             }
+        }
+
+        private void serMSP_DataReceived(object sender, System.IO.Ports.SerialDataReceivedEventArgs e)
+        {
+            while (serMSP.IsOpen && serMSP.BytesToRead != 0)
+            {
+                int currentByte = serMSP.ReadByte();
+                amountStepped--;
+                if (amountStepped < -400) amountStepped += 400;
+
+                outputDataQueueLongitude.Enqueue(amountStepped);
+                if (autoMode && amountStepped == -200)
+                {
+                    currentMonth++;
+                    if (currentMonth > 12) currentMonth = 1;
+
+                    TxBytesArduino[0] = Convert.ToByte(currentMonth);
+                    serArduino.Write(TxBytesArduino, 0, 1);
+
+                    outputDataQueueMonth.Enqueue(currentMonth);
+
+                    //try
+                    //{
+                    //    if (serArduino.IsOpen)
+                    //    {
+                    //        TxBytesArduino[0] = Convert.ToByte(arduinoAutoModeMonth);
+                    //        serArduino.Write(TxBytesArduino, 0, 1);
+                    //    }
+                    //}
+                    //catch (Exception Ex)
+                    //{
+                    //    MessageBox.Show(Ex.Message);
+                    //}
+                }
+            }
+            
+        }
+
+        private void tmrUpdatePos_Tick(object sender, EventArgs e)
+        {
+            while (outputDataQueueLongitude.Count() > 1)                                       // While statement to ensure we read the latest data from queue
+            {
+                outputDataQueueLongitude.TryDequeue(out removedItemInDataQueueLongitude);
+            }
+
+            if (outputDataQueueLongitude.TryDequeue(out removedItemInDataQueueLongitude))
+            {
+                txtbxCurrentLongitude.Text = (0.9*removedItemInDataQueueLongitude + 180).ToString();
+            }
+
+            while (outputDataQueueMonth.Count() > 1)                                       // While statement to ensure we read the latest data from queue
+            {
+                outputDataQueueMonth.TryDequeue(out removedItemInDataQueueMonth);
+            }
+
+            if (outputDataQueueMonth.TryDequeue(out removedItemInDataQueueMonth))
+            {
+                if (removedItemInDataQueueMonth == 1) txtbxCurrentMonth.Text = "January";
+                if (removedItemInDataQueueMonth == 2) txtbxCurrentMonth.Text = "February";
+                if (removedItemInDataQueueMonth == 3) txtbxCurrentMonth.Text = "March";
+                if (removedItemInDataQueueMonth == 4) txtbxCurrentMonth.Text = "April";
+                if (removedItemInDataQueueMonth == 5) txtbxCurrentMonth.Text = "May";
+                if (removedItemInDataQueueMonth == 6) txtbxCurrentMonth.Text = "June";
+                if (removedItemInDataQueueMonth == 7) txtbxCurrentMonth.Text = "July";
+                if (removedItemInDataQueueMonth == 8) txtbxCurrentMonth.Text = "August";
+                if (removedItemInDataQueueMonth == 9) txtbxCurrentMonth.Text = "September";
+                if (removedItemInDataQueueMonth == 10) txtbxCurrentMonth.Text = "October";
+                if (removedItemInDataQueueMonth == 11) txtbxCurrentMonth.Text = "November";
+                if (removedItemInDataQueueMonth == 12) txtbxCurrentMonth.Text = "December";
+            }
+        }
+
+
+        // Pressing the 'Home' button will reset the amountStepped variable to 0 to indiciate 0 degree longitude
+        private void btnHome_Click(object sender, EventArgs e)
+        {
+            amountStepped = -200;
+
+            outputDataQueueLongitude.Enqueue(amountStepped);
         }
     }
     
