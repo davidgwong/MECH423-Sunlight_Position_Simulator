@@ -194,7 +194,7 @@ namespace MECH_423_City_Lookup
 
             try
             {
-                if (serMSP.IsOpen)
+                if (serMSP.IsOpen && autoMode)
                 {
                     int milliseconds = 200;
 
@@ -226,9 +226,9 @@ namespace MECH_423_City_Lookup
                 double textboxLongValue = Convert.ToDouble(txtbxLong.Text) * -1;
                 double stepAmount;
                 if (textboxLongValue < 0)
-                    stepAmount = (textboxLongValue + 360 - currentPosition) / 0.9;
+                    stepAmount = (textboxLongValue + 360 + currentPosition) / 0.9;
                 else
-                    stepAmount = (textboxLongValue - currentPosition) / 0.9;
+                    stepAmount = (textboxLongValue + currentPosition) / 0.9;
                 int steptAmountInt = Convert.ToInt16(stepAmount);
                 int stepAmountToSend = Convert.ToInt16(Math.Abs(stepAmount));
                 int directionToSend = 0;
